@@ -10,6 +10,9 @@ export default function IssuesList({labels, status}) {
       const statusString = status ? `&status=${status}` : '';
       const labelsString = labels.map((label) => `labels[]=${label}`).join('&');
       return fetch(`api/issues?${labelsString}${statusString}`).then(res => res.json())
+    },
+    {
+      staleTime: 1000 * 60
     }
   )
 
