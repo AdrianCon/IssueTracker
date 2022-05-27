@@ -7,7 +7,7 @@ import { relativeDate } from "../helpers/relativeDate"
 function useIssueData(issueNumber) {
   return useQuery(
     ["issues", issueNumber],
-    () => fetch(`/api/issues/${issueNumber}`)
+    ({signal}) => fetch(`/api/issues/${issueNumber}`, {signal})
     .then(res => res.json())
   )
 }
@@ -15,7 +15,7 @@ function useIssueData(issueNumber) {
 function useIssueComments(issueNumber) {
   return useQuery(
     ["issues", issueNumber, "comments"],
-    () => fetch(`/api/issues/${issueNumber}/comments`)
+    ({signal}) => fetch(`/api/issues/${issueNumber}/comments`, {signal})
     .then(res => res.json())
   )
 }
