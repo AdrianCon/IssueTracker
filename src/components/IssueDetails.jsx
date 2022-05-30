@@ -1,4 +1,4 @@
-import { useQuery } from "react-query";
+import { useInfiniteQuery, useQuery } from "react-query";
 import { useParams } from "react-router-dom";
 import { useUserData } from "../helpers/useUserData";
 import { IssueHeader } from "./IssueHeader";
@@ -6,6 +6,9 @@ import { relativeDate } from "../helpers/relativeDate"
 import IssueStatus from "./IssueStatus";
 import IssueAssignment from "./IssueAssignment";
 import IssueLabels from "./IssueLabels";
+import { Fragment } from "react";
+import Loader from "./Loader";
+import useScrollToBottomAction from "../helpers/useScrollToBottomAction";
 
 function useIssueData(issueNumber) {
   return useQuery(
@@ -16,10 +19,15 @@ function useIssueData(issueNumber) {
 }
 
 function useIssueComments(issueNumber) {
-  return useQuery(
+  return useInfiniteQuery(
     ["issues", issueNumber, "comments"],
-    ({signal}) => fetch(`/api/issues/${issueNumber}/comments`, {signal})
-    .then(res => res.json())
+    ({signal, pageParam = 1}) => fetch(`/api/issues/${issueNumber}/comments?page=${pageParam}`, {signal})
+    .then(res => res.json()),{
+      getNextPageParam: (lastPage, pages) => {
+        if (lastPage.length === 0) return;
+        return pages.length + 1;
+      }
+    }
   )
 }
 
@@ -53,6 +61,8 @@ export default function IssueDetails() {
   const issueQuery = useIssueData(number);
   const commentsQuery = useIssueComments(number);
 
+  useScrollToBottomAction(document, commentsQuery.fetchNextPage, 100);
+
   return (
     <div className={"issue-details"}>
       {issueQuery.isLoading ? <p>Loading Issue...</p> : (
@@ -61,8 +71,13 @@ export default function IssueDetails() {
           <main>
             <section>
               {commentsQuery.isLoading ? <p>Loading...</p> : (
-                commentsQuery.data?.map((comment) => <Comment key={comment.id} {...comment}/>)
+                commentsQuery.data?.pages.map((page, index) =>
+                  <Fragment key={index}>
+                    {page.map(comment => <Comment key={comment.id} {...comment}/>)}
+                  </Fragment>
+                 )
               )}
+              {commentsQuery.isFetchingNextPage && <Loader />}
             </section>
             <aside>
               <IssueStatus
